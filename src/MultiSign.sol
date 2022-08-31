@@ -2,7 +2,16 @@
 pragma solidity ^0.8.13;
 
 contract MultiSign {
-    constructor() {}
+    address[] public owners; // Multi-signature holder array
+    uint256 public threshold; // Multi-signature execution threshold: A transaction must have at least n signatures before it can be executed.
+    uint256 public nonce; // nonce: prevents signature replay attacks
+    event ExecutionSuccess(bytes32 txHash); // Transaction success event
+    event ExecutionFailure(bytes32 txHash); // Transaction failure event
+
+    // constructor, initializes owners, isOwner, ownerCount, threshold
+    constructor(address[] memory _owners, uint256 _threshold) {
+        _setupOwners(_owners, _threshold);
+    }
     /**
      * initialize Multiple signature _owners
      * @param _owners : Multiple signature _owners
@@ -11,7 +20,19 @@ contract MultiSign {
     function _setupOwners(
         address[] memory _owners,
         uint256 _threshold
-    ) internal {}
+    ) internal {
+        // threshold was not initialized
+        require(threshold == 0, "threshold not initialized yet");
+        // The threshold for executing multiple signatures is smaller than the number of multiple signatures
+        require(_threshold <= _owners.length, "threshold too few");
+        // The threshold for executing multiple signatures must be at least 1
+        require(_threshold >= 1, "threshold must more than 1");
+        for (uint256 i = 0; i < _owners.length; i) {
+            address owner = _owners[i];
+            // Multiple signers cannot be 0 addresses, and the address of this contract cannot be repeated
+            owners.push(owner);
+        }
+    }
     /**
      * check signatures
      * @param dataHash : Hash of the data to be signed
