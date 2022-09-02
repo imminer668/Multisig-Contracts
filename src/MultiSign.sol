@@ -53,6 +53,20 @@ contract MultiSign {
         uint256 pos
     ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {}
     /**
+     * execute transaction
+     * @param to : Address to execute
+     * @param value : Value to execute
+     * @param data : Data to execute
+     * @param signatures : Signatures of the data
+     */
+    function execTransaction(
+        address to,
+        uint256 value,
+        bytes memory data,
+        bytes memory signatures
+    ) public payable virtual returns (bool success) {}
+
+    /**
      * encode transaction data
      * @param to : Address to send the transaction
      * @param value : Amount of Ether to send
