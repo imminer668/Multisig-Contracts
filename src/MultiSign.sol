@@ -51,7 +51,14 @@ contract MultiSign {
     function signatureSplit(
         bytes memory signatures,
         uint256 pos
-    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {}
+    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        assembly {
+            let signaturePos := mul(0x41, pos)
+            r := mload(add(signatures, add(signaturePos, 0x20)))
+            s := mload(add(signatures, add(signaturePos, 0x40)))
+            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+        }
+    }
     /**
      * execute transaction
      * @param to : Address to execute
