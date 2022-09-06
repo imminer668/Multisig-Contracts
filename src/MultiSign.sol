@@ -5,6 +5,7 @@ contract MultiSign {
     address[] public owners; // Multi-signature holder array
     uint256 public threshold; // Multi-signature execution threshold: A transaction must have at least n signatures before it can be executed.
     uint256 public nonce; // nonce: prevents signature replay attacks
+    mapping(address => bool) public isOwner; //is Multi-signature owner
     event ExecutionSuccess(bytes32 txHash); // Transaction success event
     event ExecutionFailure(bytes32 txHash); // Transaction failure event
 
@@ -41,7 +42,36 @@ contract MultiSign {
     function checkSignatures(
         bytes32 dataHash,
         bytes memory signatures
-    ) public view {}
+    ) public view {
+        require(signatures.length >= threshold * 65, "signatures string error");
+
+        
+        address lastOwner = address(0);
+        address currentOwner;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        uint256 i;
+        for (i = 0; i < threshold; i++) {
+            (v, r, s) = signatureSplit(signatures, i);
+            currentOwner = ecrecover(
+                keccak256(
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        dataHash
+                    )
+                ),
+                v,
+                r,
+                s
+            );
+            require(
+                currentOwner > lastOwner && isOwner[currentOwner],
+                "signatures error"
+            );
+            lastOwner = currentOwner;
+        }
+    }
 
     /**
      * split signature
