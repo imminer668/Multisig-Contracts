@@ -101,7 +101,20 @@ contract MultiSign {
         uint256 value,
         bytes memory data,
         bytes memory signatures
-    ) public payable virtual returns (bool success) {}
+    ) public payable virtual returns (bool success) {
+        bytes32 txHash = encodeTransactionData(
+            to,
+            value,
+            data,
+            nonce,
+            block.chainid
+        );
+        nonce++; 
+        checkSignatures(txHash, signatures); 
+        (success, ) = to.call{value: value}(data);
+        if (success) emit ExecutionSuccess(txHash);
+        else emit ExecutionFailure(txHash);
+    }
 
     /**
      * encode transaction data
