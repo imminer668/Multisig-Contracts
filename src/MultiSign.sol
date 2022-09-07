@@ -30,6 +30,12 @@ contract MultiSign {
         require(_threshold >= 1, "threshold must more than 1");
         for (uint256 i = 0; i < _owners.length; i) {
             address owner = _owners[i];
+            require(
+                owner != address(0) &&
+                    owner != address(this) &&
+                    !isOwner[owner],
+                "address error"
+            );
             // Multiple signers cannot be 0 addresses, and the address of this contract cannot be repeated
             owners.push(owner);
         }
