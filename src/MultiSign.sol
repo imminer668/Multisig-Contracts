@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-contract MultiSign {
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+contract MultiSign is ReentrancyGuard{
     address[] public owners; // Multi-signature holder array
     uint256 public threshold; // Multi-signature execution threshold: A transaction must have at least n signatures before it can be executed.
     uint256 public nonce; // nonce: prevents signature replay attacks
@@ -107,7 +108,7 @@ contract MultiSign {
         uint256 value,
         bytes memory data,
         bytes memory signatures
-    ) public payable virtual returns (bool success) {
+    ) public payable nonReentrant virtual returns (bool success) {
         bytes32 txHash = encodeTransactionData(
             to,
             value,
