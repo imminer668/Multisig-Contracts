@@ -29,7 +29,7 @@ contract MultiSign is ReentrancyGuard{
         require(_threshold <= _owners.length, "threshold too few");
         // The threshold for executing multiple signatures must be at least 1
         require(_threshold >= 1, "threshold must more than 1");
-        for (uint256 i = 0; i < _owners.length; i) {
+        for (uint256 i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
             require(
                 owner != address(0) &&
