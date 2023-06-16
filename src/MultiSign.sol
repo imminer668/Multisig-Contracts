@@ -227,6 +227,7 @@ contract MultiSign is ReentrancyGuard{
         bytes memory data,
         bytes memory signatures
     ) public payable nonReentrant virtual returns (bool success) {
+        // 首先验证签名
         bytes32 txHash = encodeTransactionData(
             to,
             value,
@@ -235,10 +236,13 @@ contract MultiSign is ReentrancyGuard{
             block.chainid
         );
         
+        // 先验证签名
+        checkSignatures(txHash, signatures);
+        
         // 检查交易记录
         Transaction storage transaction = transactions[txHash];
         
-        // 如果交易已经提交过
+        // 如果交易已经提交过（先提交交易=>收集签名=>后执行）
         if (transaction.timestamp > 0) {
             // 检查交易是否已执行
             require(!transaction.executed, "transaction already executed");
@@ -266,7 +270,6 @@ contract MultiSign is ReentrancyGuard{
         }
         
         nonce++; // 增加nonce防止重放攻击
-        checkSignatures(txHash, signatures); // 验证签名
         
         // 标记为已执行
         transactions[txHash].executed = true;
