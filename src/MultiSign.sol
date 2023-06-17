@@ -218,6 +218,7 @@ contract MultiSign is ReentrancyGuard{
      * @param to 目标地址
      * @param value 发送的以太币金额
      * @param data 调用数据
+     * @param executionNonce 指定使用的nonce
      * @param signatures 签名数据集合
      * @return success 交易是否成功
      */
@@ -225,38 +226,34 @@ contract MultiSign is ReentrancyGuard{
         address to,
         uint256 value,
         bytes memory data,
+        uint256 executionNonce,
         bytes memory signatures
     ) public payable nonReentrant virtual returns (bool success) {
-        // 首先验证签名
-        bytes32 txHash = encodeTransactionData(
-            to,
-            value,
-            data,
-            nonce,
-            block.chainid
-        );
+        // 使用指定的nonce计算哈希
+        bytes32 txHash = encodeTransactionData(to, value, data, executionNonce, block.chainid);
         
-        // 先验证签名
-        checkSignatures(txHash, signatures);
+        Transaction storage tx = transactions[txHash];
         
-        // 检查交易记录
-        Transaction storage transaction = transactions[txHash];
-        
-        // 如果交易已经提交过（先提交交易=>收集签名=>后执行）
-        if (transaction.timestamp > 0) {
-            // 检查交易是否已执行
-            require(!transaction.executed, "transaction already executed");
+        if (tx.timestamp > 0) {
+            // 已存在的交易，检查状态
+            require(!tx.cancelled, "transaction cancelled");
             
-            // 检查交易是否已取消
-            require(!transaction.cancelled, "transaction cancelled");
+            // 检查交易是否已执行
+            require(!tx.executed, "transaction already executed");
             
             // 检查交易是否在有效期内
             require(
-                block.timestamp <= transaction.timestamp + transactionValidityPeriod,
+                block.timestamp <= tx.timestamp + transactionValidityPeriod,
                 "transaction expired"
             );
+            
+            // 使用txHash（已存储的）验证签名
+            checkSignatures(txHash, signatures);
         } else {
-            // 如果是直接执行而不是先提交，则创建一个新的交易记录
+            // 新交易，使用当前计算的哈希验证签名
+            checkSignatures(txHash, signatures);
+            
+            // 创建交易记录
             transactions[txHash] = Transaction({
                 to: to,
                 value: value,
@@ -266,10 +263,14 @@ contract MultiSign is ReentrancyGuard{
                 cancelled: false
             });
             
-            emit TransactionSubmitted(txHash, to, value, data, nonce);
+            emit TransactionSubmitted(txHash, to, value, data, executionNonce);
+            
+            // 仅对直接执行的新交易递增nonce
+            // 对于已提交的交易，nonce在提交时已增加，不需要再次增加
+            if (executionNonce == nonce) {
+                nonce++;
+            }
         }
-        
-        nonce++; // 增加nonce防止重放攻击
         
         // 标记为已执行
         transactions[txHash].executed = true;
